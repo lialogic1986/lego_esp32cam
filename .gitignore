@@ -1,0 +1,29 @@
+# ===== ESP-IDF build artifacts =====
+build/
+sdkconfig.old
+sdkconfig.backup
+
+# Optional: if you want sdkconfig local only
+# sdkconfig
+
+# ===== CMake =====
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# ===== VS Code =====
+.vscode/
+*.code-workspace
+
+# ===== Logs =====
+*.log
+
+# ===== Python cache (if you use python tools) =====
+__pycache__/
+*.pyc
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
