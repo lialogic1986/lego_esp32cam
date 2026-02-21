@@ -10,6 +10,8 @@
 #include "esp_event.h"
 #include "esp_wifi.h"
 #include "esp_system.h" // strlcpy
+#include "esp_ota_ops.h"
+#include "esp_log.h"
 
 static const char *TAG = "CONN";
 
@@ -17,6 +19,18 @@ static const char *TAG = "CONN";
 #define WIFI_PASS "02121986"
 
 static bool s_wifi_inited = false;
+
+static void ota_mark_valid_if_pending(void)
+{
+    esp_ota_img_states_t st;
+    const esp_partition_t *running = esp_ota_get_running_partition();
+    if (esp_ota_get_state_partition(running, &st) == ESP_OK &&
+        st == ESP_OTA_IMG_PENDING_VERIFY)
+    {
+        ESP_LOGW("OTA", "Marking app valid (cancel rollback)");
+        esp_ota_mark_app_valid_cancel_rollback();
+    }
+}
 
 void conn_task_init(void)
 {
@@ -67,6 +81,7 @@ void conn_task_init(void)
 static void conn_task(void *arg)
 {
     (void)arg;
+    static bool first = true;
 
     ESP_LOGI(TAG, "WiFi start; connecting to AP...");
     ESP_ERROR_CHECK(esp_wifi_connect());
@@ -78,6 +93,11 @@ static void conn_task(void *arg)
         if (e == ESP_OK)
         {
             ESP_LOGI(TAG, "WiFi OK, RSSI=%d", ap.rssi);
+            if (first)
+            {
+                ota_mark_valid_if_pending();
+                first = false;
+            }
         }
         else
         {
@@ -86,6 +106,13 @@ static void conn_task(void *arg)
         }
         vTaskDelay(pdMS_TO_TICKS(2000));
     }
+}
+
+bool is_wifi_connected()
+{
+    wifi_ap_record_t ap;
+    esp_err_t e = esp_wifi_sta_get_ap_info(&ap);
+    return e == ESP_OK;
 }
 
 void conn_mgr_start(void)

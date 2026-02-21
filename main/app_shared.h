@@ -7,7 +7,7 @@
 
 // ========= Настройки сети =========
 // Впиши IP твоего Linux ПК (куда шлём UDP)
-#define DEST_IP_STR "192.168.0.102"
+#define DEST_IP_STR "192.168.0.104"
 #define VIDEO_PORT 5000
 
 // Размер payload в UDP (безопасно для MTU)

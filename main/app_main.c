@@ -12,13 +12,31 @@
 #include "driver/gpio.h"
 #include "esp_netif.h"
 #include "esp_event.h"
+#include "esp_ota_ops.h"
+#include "ws_client.h"
+#include "ota.h"
+#include "remote_console.h"
+#include "log_stream.h"
 
 static const char *TAG = "APP";
 
 QueueHandle_t g_frame_q = NULL;
 
+static void logs_tune(void)
+{
+    esp_log_level_set("*", ESP_LOG_INFO);     // твои INFO видны
+    esp_log_level_set("wifi", ESP_LOG_ERROR); // wifi только ERROR
+    esp_log_level_set("phy", ESP_LOG_ERROR);
+}
+
+static void on_ws_text(const char *txt, int len)
+{
+    remote_console_on_ws_text(txt, len);
+}
+
 void app_main(void)
 {
+    logs_tune();
     ESP_LOGI(TAG, "lego_cam_udp starting...");
 
     conn_task_init();
@@ -47,5 +65,20 @@ void app_main(void)
     rfid_task_start(rfid_evt_q);
 
     ESP_LOGI(TAG, "Tasks started");
+    while (!is_wifi_connected())
+        ;
+
+    ws_client_cfg_t cfg = {
+        .uri = "ws://" DEST_IP_STR ":8000/ws/train-01", // поменяешь
+        .device_id = "train-01",
+        .fw_version = "0.1.0",
+    };
+
+    ESP_ERROR_CHECK(ws_client_start(&cfg, on_ws_text));
+    ESP_LOGI(TAG, "ws client started");
+
+    log_stream_start();
+    ESP_LOGI(TAG, "log stream started");
+
     // app_main может завершиться — задачи продолжат жить
 }

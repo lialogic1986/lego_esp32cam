@@ -1,2 +1,4 @@
 dependencies:
   espressif/esp32-camera: "*"
+  espressif/esp_jpeg: "*"
+  espressif/esp_websocket_client: "*"
