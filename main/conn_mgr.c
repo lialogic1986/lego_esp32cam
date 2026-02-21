@@ -5,7 +5,7 @@
 #include "freertos/task.h"
 
 #include "esp_log.h"
-#include "nvs_flash.h"
+
 #include "esp_netif.h"
 #include "esp_event.h"
 #include "esp_wifi.h"
@@ -41,21 +41,10 @@ void conn_task_init(void)
     }
     s_wifi_inited = true;
 
-    esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND)
-    {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ESP_ERROR_CHECK(nvs_flash_init());
-    }
-    else
-    {
-        ESP_ERROR_CHECK(err);
-    }
-
     ESP_ERROR_CHECK(esp_netif_init());
 
     // если вдруг уже создано (в будущем), не падаем
-    err = esp_event_loop_create_default();
+    esp_err_t err = esp_event_loop_create_default();
     if (err != ESP_OK && err != ESP_ERR_INVALID_STATE)
     {
         ESP_ERROR_CHECK(err);

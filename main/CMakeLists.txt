@@ -11,6 +11,7 @@ idf_component_register(
     "remote_console.c"
     "log_stream.c"
     "ping_mod.c"
+    "prov_ble.c"
   INCLUDE_DIRS "."
   REQUIRES
         esp32-camera
@@ -27,4 +28,5 @@ idf_component_register(
         esp_netif
         esp_wifi
         lwip
+        bt
 )
