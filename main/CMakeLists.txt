@@ -10,6 +10,7 @@ idf_component_register(
     "ota.c"
     "remote_console.c"
     "log_stream.c"
+    "ping_mod.c"
   INCLUDE_DIRS "."
   REQUIRES
         esp32-camera
@@ -22,5 +23,8 @@ idf_component_register(
         app_update
         esp_partition
         json
-        esp_websocket_client  # добавишь, когда компонент реально подтянут
+        esp_websocket_client
+        esp_netif
+        esp_wifi
+        lwip
 )

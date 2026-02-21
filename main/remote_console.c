@@ -1,5 +1,6 @@
 #include "remote_console.h"
 #include "ws_client.h"
+#include "ping_mod.h"
 #include "freertos/FreeRTOS.h"
 
 #include <string.h>
@@ -122,6 +123,32 @@ void remote_console_on_ws_text(const char *txt, int len)
         {
             // Сюда позже повесим вызов ota_check_and_update()
             reply_ok(id->valuestring, NULL);
+        }
+        else if (strcmp(name->valuestring, "ping") == 0)
+        {
+            int count = 4, interval_ms = 1000, timeout_ms = 1000, payload_size = 56;
+            if (cJSON_IsObject(args))
+            {
+                cJSON *v;
+                v = cJSON_GetObjectItem(args, "count");
+                if (cJSON_IsNumber(v))
+                    count = v->valueint;
+                v = cJSON_GetObjectItem(args, "interval_ms");
+                if (cJSON_IsNumber(v))
+                    interval_ms = v->valueint;
+                v = cJSON_GetObjectItem(args, "timeout_ms");
+                if (cJSON_IsNumber(v))
+                    timeout_ms = v->valueint;
+                v = cJSON_GetObjectItem(args, "size");
+                if (cJSON_IsNumber(v))
+                    payload_size = v->valueint;
+            }
+
+            esp_err_t e = ping_mod_start_gateway(id->valuestring, count, interval_ms, timeout_ms, payload_size);
+            if (e != ESP_OK)
+            {
+                reply_err(id->valuestring, "ping_busy_or_fail");
+            }
         }
         else
         {

@@ -66,7 +66,9 @@ void app_main(void)
 
     ESP_LOGI(TAG, "Tasks started");
     while (!is_wifi_connected())
-        ;
+    {
+        vTaskDelay(pdMS_TO_TICKS(3000));
+    };
 
     ws_client_cfg_t cfg = {
         .uri = "ws://" DEST_IP_STR ":8000/ws/train-01", // поменяешь
