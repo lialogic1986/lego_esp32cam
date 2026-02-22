@@ -113,7 +113,7 @@ static void send_jpeg_udp(int sock, const struct sockaddr_in *to,
 int sock = 0;
 struct sockaddr_in to = {0};
 
-void udp_tx_task_init(void)
+void udp_tx_task_init(const char *ipaddr, uint16_t video_port)
 {
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
     if (sock < 0)
@@ -124,12 +124,12 @@ void udp_tx_task_init(void)
     }
 
     to.sin_family = AF_INET;
-    to.sin_port = htons(VIDEO_PORT);
-    inet_pton(AF_INET, DEST_IP_STR, &to.sin_addr);
+    to.sin_port = htons(video_port);
+    inet_pton(AF_INET, ipaddr, &to.sin_addr);
 
     tx_stats_init();
 
-    ESP_LOGI(TAG, "UDP TX -> %s:%d", DEST_IP_STR, VIDEO_PORT);
+    ESP_LOGI(TAG, "UDP TX -> %s:%d", ipaddr, video_port);
 }
 
 static void udp_tx_task(void *arg)

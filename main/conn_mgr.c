@@ -15,9 +15,6 @@
 
 static const char *TAG = "CONN";
 
-#define WIFI_SSID "lialogic_home"
-#define WIFI_PASS "02121986"
-
 static bool s_wifi_inited = false;
 
 static void ota_mark_valid_if_pending(void)
@@ -32,7 +29,7 @@ static void ota_mark_valid_if_pending(void)
     }
 }
 
-void conn_task_init(void)
+void conn_task_init(char *ssid, char *pswd)
 {
     if (s_wifi_inited)
     {
@@ -56,15 +53,15 @@ void conn_task_init(void)
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
     wifi_config_t wc = {0};
-    strlcpy((char *)wc.sta.ssid, WIFI_SSID, sizeof(wc.sta.ssid));
-    strlcpy((char *)wc.sta.password, WIFI_PASS, sizeof(wc.sta.password));
+    strlcpy((char *)wc.sta.ssid, ssid, sizeof(wc.sta.ssid));
+    strlcpy((char *)wc.sta.password, pswd, sizeof(wc.sta.password));
     wc.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wc));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGI(TAG, "WiFi init done (ssid=%s)", WIFI_SSID);
+    ESP_LOGI(TAG, "WiFi init done (ssid=%s)", ssid);
 }
 
 static void conn_task(void *arg)

@@ -25,6 +25,14 @@ static const char *TAG = "APP";
 
 QueueHandle_t g_frame_q = NULL;
 static bool provisioning_ok = false;
+static prov_session_cfg_t sConfig = {
+    .ssid = WIFI_SSID,
+    .pass = WIFI_PASS,
+    .host_ip = DEST_IP_STR,
+    .port_video = VIDEO_PORT,
+    .port_tele = WS_PORT,
+    .port_ws = WS_PORT,
+};
 
 static void set_time_utc_ms(int64_t unix_ms)
 {
@@ -36,6 +44,8 @@ static void set_time_utc_ms(int64_t unix_ms)
 
 static esp_err_t my_apply_cb(const prov_session_cfg_t *cfg)
 {
+    memcpy(&sConfig, cfg, sizeof(prov_session_cfg_t));
+
     ESP_LOGI(TAG, "CFG: ssid=%s host=%s video=%u tele=%u ws=%u time(ms)=%" PRId64,
              cfg->ssid, cfg->host_ip, cfg->port_video, cfg->port_tele, cfg->port_ws, cfg->unix_ms_utc);
 
@@ -92,9 +102,9 @@ void app_main(void)
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 
-    conn_task_init();
+    conn_task_init(sConfig.ssid, sConfig.pass);
     camera_task_init();
-    udp_tx_task_init();
+    udp_tx_task_init(sConfig.host_ip, sConfig.port_video);
     rfid_task_init();
 
     // Очередь кадров: 3 элемента — достаточно
@@ -123,13 +133,7 @@ void app_main(void)
         vTaskDelay(pdMS_TO_TICKS(3000));
     };
 
-    ws_client_cfg_t cfg = {
-        .uri = "ws://" DEST_IP_STR ":8000/ws/train-01", // поменяешь
-        .device_id = "train-01",
-        .fw_version = "0.1.0",
-    };
-
-    ESP_ERROR_CHECK(ws_client_start(&cfg, on_ws_text));
+    ESP_ERROR_CHECK(ws_client_start(sConfig.host_ip, sConfig.port_ws));
     ESP_LOGI(TAG, "ws client started");
 
     log_stream_start();

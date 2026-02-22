@@ -9,6 +9,7 @@
 #include "freertos/queue.h"
 #include "esp_websocket_client.h"
 #include "conn_mgr.h"
+#include "remote_console.h"
 
 static const char *TAG = "WS";
 
@@ -145,21 +146,27 @@ static void reconnect_task(void *arg)
     }
 }
 
-esp_err_t ws_client_start(const ws_client_cfg_t *cfg, ws_on_text_cb_t on_text)
+esp_err_t ws_client_start(char *ipaddr, uint16_t port)
 {
-    if (!cfg || !cfg->uri || !cfg->device_id || !cfg->fw_version)
+    if (!ipaddr || !port)
         return ESP_ERR_INVALID_ARG;
 
-    strncpy(s_device_id, cfg->device_id, sizeof(s_device_id) - 1);
-    strncpy(s_fw, cfg->fw_version, sizeof(s_fw) - 1);
-    s_on_text = on_text;
+    static char uri[64];
+    char device_id[16] = "train-01";
+    char fw_version[10] = "0.1.0";
+
+    snprintf(uri, sizeof(uri), "ws://%s:%d/ws/%s", ipaddr, port, device_id);
+
+    strncpy(s_device_id, device_id, sizeof(s_device_id) - 1);
+    strncpy(s_fw, fw_version, sizeof(s_fw) - 1);
+    s_on_text = remote_console_on_ws_text;
 
     s_txq = xQueueCreate(16, sizeof(ws_msg_t));
     if (!s_txq)
         return ESP_ERR_NO_MEM;
 
     esp_websocket_client_config_t ws_cfg = {
-        .uri = cfg->uri,
+        .uri = uri,
         // Для wss с нормальным сертификатом позже добавишь:
         // .cert_pem = server_cert_pem,
         .reconnect_timeout_ms = 0, // мы сами делаем reconnect

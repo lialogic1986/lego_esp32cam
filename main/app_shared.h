@@ -9,6 +9,10 @@
 // Впиши IP твоего Linux ПК (куда шлём UDP)
 #define DEST_IP_STR "192.168.0.104"
 #define VIDEO_PORT 5000
+#define WS_PORT 8000
+
+#define WIFI_SSID "lialogic_home"
+#define WIFI_PASS "02121986"
 
 // Размер payload в UDP (безопасно для MTU)
 #define UDP_PAYLOAD 1200
