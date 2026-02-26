@@ -60,9 +60,9 @@ static esp_err_t cam_init(void)
     c.pixel_format = PIXFORMAT_JPEG;
 
     // Стартовые настройки (можно крутить):
-    c.frame_size = FRAMESIZE_VGA; // если сеть слабая: FRAMESIZE_QVGA
-    c.jpeg_quality = 12;          // больше число => хуже качество, меньше трафик
-    c.fb_count = 2;               // 2 буфера достаточно (это и есть "двойной буфер")
+    c.frame_size = FRAMESIZE_QVGA; // если сеть слабая: FRAMESIZE_QVGA
+    c.jpeg_quality = 12;           // больше число => хуже качество, меньше трафик
+    c.fb_count = 2;                // 2 буфера достаточно (это и есть "двойной буфер")
 
     esp_err_t err = esp_camera_init(&c);
     if (err != ESP_OK)

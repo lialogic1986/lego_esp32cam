@@ -105,7 +105,7 @@ void app_main(void)
     conn_task_init(sConfig.ssid, sConfig.pass);
     camera_task_init();
     udp_tx_task_init(sConfig.host_ip, sConfig.port_video);
-    rfid_task_init();
+    // rfid_task_init();
 
     // Очередь кадров: 3 элемента — достаточно
     g_frame_q = xQueueCreate(3, sizeof(frame_item_t));
@@ -125,7 +125,7 @@ void app_main(void)
     conn_mgr_start();
     camera_task_start(g_frame_q);
     udp_tx_start(g_frame_q);
-    rfid_task_start(rfid_evt_q);
+    // rfid_task_start(rfid_evt_q);
 
     ESP_LOGI(TAG, "Tasks started");
     while (!is_wifi_connected())

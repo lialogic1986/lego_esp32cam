@@ -157,6 +157,8 @@ esp_err_t ws_client_start(char *ipaddr, uint16_t port)
 
     snprintf(uri, sizeof(uri), "ws://%s:%d/ws/%s", ipaddr, port, device_id);
 
+    ESP_LOGI(TAG, "Connecting to %s", uri);
+
     strncpy(s_device_id, device_id, sizeof(s_device_id) - 1);
     strncpy(s_fw, fw_version, sizeof(s_fw) - 1);
     s_on_text = remote_console_on_ws_text;
