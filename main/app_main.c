@@ -16,7 +16,7 @@
 #include "esp_event.h"
 #include "esp_ota_ops.h"
 #include "ws_client.h"
-#include "ota.h"
+#include "fota.h"
 #include "remote_console.h"
 #include "log_stream.h"
 #include "prov_ble.h"
@@ -82,6 +82,21 @@ static void flash_init(void)
     }
 }
 
+static void ota_mark_valid_if_needed(void)
+{
+    const esp_partition_t *running = esp_ota_get_running_partition();
+    esp_ota_img_states_t st;
+    if (esp_ota_get_state_partition(running, &st) == ESP_OK)
+    {
+        if (st == ESP_OTA_IMG_PENDING_VERIFY)
+        {
+            // мы успешно запустились -> фиксируем, чтобы не было rollback
+            esp_err_t e = esp_ota_mark_app_valid_cancel_rollback();
+            ESP_LOGI(TAG, "OTA pending verify -> mark valid: %s", esp_err_to_name(e));
+        }
+    }
+}
+
 void app_main(void)
 {
     logs_tune();
@@ -125,13 +140,15 @@ void app_main(void)
     conn_mgr_start();
     camera_task_start(g_frame_q);
     udp_tx_start(g_frame_q);
-    // rfid_task_start(rfid_evt_q);
+    //  rfid_task_start(rfid_evt_q);
 
     ESP_LOGI(TAG, "Tasks started");
     while (!is_wifi_connected())
     {
         vTaskDelay(pdMS_TO_TICKS(3000));
     };
+
+    ota_mark_valid_if_needed();
 
     ESP_ERROR_CHECK(ws_client_start(sConfig.host_ip, sConfig.port_ws));
     ESP_LOGI(TAG, "ws client started");

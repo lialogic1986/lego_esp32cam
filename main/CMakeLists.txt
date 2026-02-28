@@ -7,11 +7,12 @@ idf_component_register(
     "udp_tx.c"
     "rfid_task.c"
     "ws_client.c"
-    "ota.c"
+   
     "remote_console.c"
     "log_stream.c"
     "ping_mod.c"
     "prov_ble.c"
+    "fota.c"
   INCLUDE_DIRS "."
   REQUIRES
         esp32-camera

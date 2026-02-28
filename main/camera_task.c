@@ -32,6 +32,9 @@ static const char *TAG = "CAM";
 static uint16_t s_frame_id = 0;
 static QueueHandle_t s_frame_q = NULL;
 
+static TaskHandle_t s_cam_th = NULL;
+static volatile bool s_cam_run = false;
+
 static esp_err_t cam_init(void)
 {
     camera_config_t c = {0};
@@ -74,6 +77,28 @@ static esp_err_t cam_init(void)
     return ESP_OK;
 }
 
+static esp_err_t camera_deinit_safe(void)
+{
+    ESP_LOGW(TAG, "camera_deinit_safe: stopping camera...");
+
+    // 1️⃣ Остановить драйвер захвата
+    esp_err_t err = esp_camera_deinit();
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "esp_camera_deinit failed: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    // 2️⃣ Небольшая пауза чтобы:
+    // - освободились DMA
+    // - закрылись I2C/VSYNC/interrupt
+    // - WiFi/flash не словили конфликт
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    ESP_LOGW(TAG, "camera_deinit_safe: done");
+    return ESP_OK;
+}
+
 void camera_task_init(void)
 {
     ESP_ERROR_CHECK(cam_init());
@@ -84,8 +109,14 @@ static void camera_task(void *arg)
     uint32_t cam_frame_cnt = 0;
     int64_t cam_t0 = esp_timer_get_time();
 
+    s_cam_run = true;
     while (1)
     {
+        if (!s_cam_run)
+        {
+            break;
+        }
+
         camera_fb_t *fb = esp_camera_fb_get();
         if (!fb)
         {
@@ -134,10 +165,32 @@ static void camera_task(void *arg)
         // Лёгкий yield
         vTaskDelay(1);
     }
+
+    vTaskDelete(NULL);
+    camera_deinit_safe();
+    s_cam_th = NULL;
 }
 
 void camera_task_start(QueueHandle_t frame_q)
 {
+    if (s_cam_th)
+        return; // уже запущено
+
     s_frame_q = frame_q;
     xTaskCreatePinnedToCore(camera_task, "camera_task", 8192, NULL, 5, NULL, 1); // 1
+}
+
+void camera_task_stop(void)
+{
+    s_cam_run = false;
+
+    while (s_cam_th != NULL)
+    {
+        vTaskDelay(10);
+    }
+}
+
+bool camera_task_is_running(void)
+{
+    return s_cam_th != NULL;
 }

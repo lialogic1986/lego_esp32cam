@@ -8,6 +8,7 @@
 #include "esp_log.h"
 #include "esp_system.h"
 #include "cJSON.h"
+#include "fota.h"
 
 static const char *TAG = "RCMD";
 
@@ -148,6 +149,41 @@ void remote_console_on_ws_text(const char *txt, int len)
             if (e != ESP_OK)
             {
                 reply_err(id->valuestring, "ping_busy_or_fail");
+            }
+        }
+        else if (strcmp(name->valuestring, "fota") == 0)
+        {
+            const char *url = NULL;
+            const char *sha = NULL;
+            int size = 0;
+
+            if (cJSON_IsObject(args))
+            {
+                cJSON *v;
+                v = cJSON_GetObjectItem(args, "url");
+                if (cJSON_IsString(v))
+                    url = v->valuestring;
+
+                v = cJSON_GetObjectItem(args, "sha256");
+                if (cJSON_IsString(v))
+                    sha = v->valuestring;
+
+                v = cJSON_GetObjectItem(args, "size");
+                if (cJSON_IsNumber(v))
+                    size = v->valueint;
+            }
+
+            if (!url)
+            {
+                reply_err(id->valuestring, "no_url");
+            }
+            else
+            {
+                esp_err_t e = fota_start(id->valuestring, url, sha, size);
+                if (e != ESP_OK)
+                {
+                    reply_err(id->valuestring, (e == ESP_ERR_INVALID_STATE) ? "busy" : "start_fail");
+                }
             }
         }
         else

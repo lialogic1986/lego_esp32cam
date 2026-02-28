@@ -15,6 +15,9 @@ static const char *TAG = "UDP_TX";
 
 static QueueHandle_t s_frame_q = NULL;
 
+static TaskHandle_t s_udp_th = NULL;
+static volatile bool s_udp_run = false;
+
 static uint32_t s_tx_frames = 0;
 static uint32_t s_tx_pkts = 0;
 static uint64_t s_tx_bytes = 0;
@@ -134,8 +137,14 @@ void udp_tx_task_init(const char *ipaddr, uint16_t video_port)
 
 static void udp_tx_task(void *arg)
 {
+    s_udp_run = true;
     while (1)
     {
+        if (!s_udp_run)
+        {
+            break;
+        }
+
         frame_item_t item;
         if (xQueueReceive(s_frame_q, &item, portMAX_DELAY) != pdTRUE)
         {
@@ -153,10 +162,31 @@ static void udp_tx_task(void *arg)
         // ВАЖНО: вернуть буфер в камеру, иначе всё станет колом.
         esp_camera_fb_return(fb);
     }
+
+    vTaskDelete(NULL);
+    close(sock);
+    s_udp_th = NULL;
 }
 
 void udp_tx_start(QueueHandle_t frame_q)
 {
+    if (s_udp_th)
+        return;
     s_frame_q = frame_q;
     xTaskCreatePinnedToCore(udp_tx_task, "udp_tx", 8192, NULL, 6, NULL, 1);
+}
+
+void udp_tx_stop(void)
+{
+    s_udp_run = false;
+    vTaskDelay(pdMS_TO_TICKS(20));
+    while (s_udp_th != NULL)
+    {
+        vTaskDelay(10);
+    }
+}
+
+bool udp_tx_is_running(void)
+{
+    return s_udp_th != NULL;
 }
