@@ -163,9 +163,9 @@ static void udp_tx_task(void *arg)
         esp_camera_fb_return(fb);
     }
 
-    vTaskDelete(NULL);
     close(sock);
     s_udp_th = NULL;
+    vTaskDelete(NULL);
 }
 
 void udp_tx_start(QueueHandle_t frame_q)
@@ -173,12 +173,18 @@ void udp_tx_start(QueueHandle_t frame_q)
     if (s_udp_th)
         return;
     s_frame_q = frame_q;
-    xTaskCreatePinnedToCore(udp_tx_task, "udp_tx", 8192, NULL, 6, NULL, 1);
+    xTaskCreatePinnedToCore(udp_tx_task, "udp_tx", 8192, NULL, 6, &s_udp_th, 1);
 }
 
 void udp_tx_stop(void)
 {
     s_udp_run = false;
+    if (s_frame_q)
+    {
+        frame_item_t wake = {0};
+        xQueueSend(s_frame_q, &wake, 0);
+    }
+
     vTaskDelay(pdMS_TO_TICKS(20));
     while (s_udp_th != NULL)
     {

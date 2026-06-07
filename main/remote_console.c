@@ -182,7 +182,14 @@ void remote_console_on_ws_text(const char *txt, int len)
                 esp_err_t e = fota_start(id->valuestring, url, sha, size);
                 if (e != ESP_OK)
                 {
-                    reply_err(id->valuestring, (e == ESP_ERR_INVALID_STATE) ? "busy" : "start_fail");
+                    const char *err = "start_fail";
+                    if (e == ESP_ERR_INVALID_STATE)
+                        err = "busy";
+                    else if (e == ESP_ERR_NO_MEM)
+                        err = "no_mem";
+                    else if (e == ESP_ERR_INVALID_ARG)
+                        err = "bad_args";
+                    reply_err(id->valuestring, err);
                 }
             }
         }

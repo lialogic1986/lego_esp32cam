@@ -73,6 +73,15 @@ static esp_err_t cam_init(void)
         ESP_LOGE(TAG, "esp_camera_init failed: 0x%x", err);
         return err;
     }
+
+    sensor_t *s = esp_camera_sensor_get();
+    if (s)
+    {
+        // 180-degree rotation: vertical flip + horizontal mirror.
+        s->set_vflip(s, 1);
+        s->set_hmirror(s, 1);
+    }
+
     ESP_LOGI(TAG, "Camera init OK");
     return ESP_OK;
 }
@@ -97,6 +106,19 @@ static esp_err_t camera_deinit_safe(void)
 
     ESP_LOGW(TAG, "camera_deinit_safe: done");
     return ESP_OK;
+}
+
+static void camera_drain_frame_queue(void)
+{
+    if (!s_frame_q)
+        return;
+
+    frame_item_t item;
+    while (xQueueReceive(s_frame_q, &item, 0) == pdTRUE)
+    {
+        if (item.fb)
+            esp_camera_fb_return(item.fb);
+    }
 }
 
 void camera_task_init(void)
@@ -166,9 +188,10 @@ static void camera_task(void *arg)
         vTaskDelay(1);
     }
 
-    vTaskDelete(NULL);
+    camera_drain_frame_queue();
     camera_deinit_safe();
     s_cam_th = NULL;
+    vTaskDelete(NULL);
 }
 
 void camera_task_start(QueueHandle_t frame_q)
@@ -177,7 +200,7 @@ void camera_task_start(QueueHandle_t frame_q)
         return; // уже запущено
 
     s_frame_q = frame_q;
-    xTaskCreatePinnedToCore(camera_task, "camera_task", 8192, NULL, 5, NULL, 1); // 1
+    xTaskCreatePinnedToCore(camera_task, "camera_task", 8192, NULL, 5, &s_cam_th, 1); // 1
 }
 
 void camera_task_stop(void)

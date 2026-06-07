@@ -153,7 +153,7 @@ esp_err_t ws_client_start(char *ipaddr, uint16_t port)
 
     static char uri[64];
     char device_id[16] = "train-01";
-    char fw_version[10] = "0.1.0";
+    char fw_version[10] = "0.1.5";
 
     snprintf(uri, sizeof(uri), "ws://%s:%d/ws/%s", ipaddr, port, device_id);
 

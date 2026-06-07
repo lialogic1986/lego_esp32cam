@@ -4,8 +4,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "esp_log.h"
+#include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "esp_ota_ops.h"
 #include "esp_partition.h"
@@ -17,6 +19,7 @@
 #include "udp_tx.h"
 
 static const char *TAG = "FOTA";
+static const uint32_t FOTA_TASK_STACK_BYTES = 8192;
 
 static bool s_busy = false;
 
@@ -322,12 +325,18 @@ esp_err_t fota_start(const char *cmd_id, const char *url, const char *sha256_hex
         strncpy(job->sha256_hex, sha256_hex, sizeof(job->sha256_hex) - 1);
     job->expected_size = expected_size;
 
-    BaseType_t ok = xTaskCreate(fota_task, "fota", 16384, job, 6, NULL);
+    BaseType_t ok = xTaskCreate(fota_task, "fota", FOTA_TASK_STACK_BYTES, job, 6, NULL);
     if (ok != pdPASS)
     {
+        ESP_LOGE(
+            TAG,
+            "xTaskCreate(fota) failed: stack=%lu free_heap=%lu largest_block=%lu",
+            (unsigned long)FOTA_TASK_STACK_BYTES,
+            (unsigned long)heap_caps_get_free_size(MALLOC_CAP_8BIT),
+            (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
         free(job);
         s_busy = false;
-        return ESP_FAIL;
+        return ESP_ERR_NO_MEM;
     }
     return ESP_OK;
 }
